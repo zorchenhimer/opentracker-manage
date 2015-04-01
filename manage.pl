@@ -6,158 +6,152 @@ use Getopt::Long;
 use Data::Dumper;
 use Pod::Usage;
 
-my $VERSION = '0.1';
-my %infohashes;
-#my $whitelist = '~/tracker/bin/whitelist.txt';
+my $VERSION = '0.2';
+my %infohashes;;
 my %opts = ('whitelist' => '/var/www/tracker/whitelist.txt');
 
 sub verbose {
-        return unless($opts{'verbose'});
-        my $msg = shift;
-        print "[VERBOSE] $msg\n";
+    return unless($opts{'verbose'});
+    my $msg = shift;
+    print "[VERBOSE] $msg\n";
 }
 
 sub load_whitelist {
-        verbose('Cleaning hash list.');
-        delete($infohashes{$_}) foreach (keys %infohashes);
+    verbose('Cleaning hash list.');
+    delete($infohashes{$_}) foreach (keys %infohashes);
 
-        verbose('Loading whitelist: '. $opts{'whitelist'});
-        open IN, '<', $opts{'whitelist'};
-        while(<IN>) {
-                chomp;
+    verbose('Loading whitelist: '. $opts{'whitelist'});
+    open IN, '<', $opts{'whitelist'};
+    while(<IN>) {
+        chomp;
 
-                s/;.+\n//g;             ## Remove stuff that hasn't been removed from this script.
+        s/;.+\n//g;             ## Remove stuff that hasn't been removed from this script.
 
-                if( /^\s*$/ or length($_) == 0 ) {
-                        verbose('Found an empty line; skipping.');
-                        next;
-                }
-
-                ## Found a good hash
-                if(/[0-9a-f]{20}/i) {
-                        ## This removes duplicates
-                        $infohashes{$_} = 1;
-                        verbose('Found hash: '. $_);
-                } else {
-                        print "Found a non-hash: '$_'\n";
-                }
+        if( /^\s*$/ or length($_) == 0 ) {
+            verbose('Found an empty line; skipping.');
+            next;
         }
-        close IN;
+
+        ## Found a good hash
+        if(/[0-9a-f]{20}/i) {
+            ## This removes duplicates
+            $infohashes{$_} = 1;
+            verbose('Found hash: '. $_);
+        } else {
+            print "Found a non-hash: '$_'\n";
+        }
+    }
+    close IN;
 }
 
 sub save_whitelist {
-        verbose('Saving whitelist: '. $opts{'whitelist'});
-        open OUT, '>', $opts{'whitelist'};
-        foreach my $hash ( keys %infohashes ) {
-                print OUT $hash, "\n";
-        }
-        close OUT;
+    verbose('Saving whitelist: '. $opts{'whitelist'});
+    open OUT, '>', $opts{'whitelist'};
+    foreach my $hash ( keys %infohashes ) {
+        print OUT $hash, "\n";
+    }
+    close OUT;
 
-        ## Send a SIGHUP to the tracker processes
-        hup_server();
+    ## Send a SIGHUP to the tracker processes
+    hup_server();
 }
 
 sub remove_hash {
-        load_whitelist();
-        my @remHash = @_;
+    load_whitelist();
+    my @remHash = @_;
 
-        for my $h ( @{$remHash[0]} ) {
-		$h = uc $h;
-                verbose('Attempting to remove '. $h. ' from the whitelist.');
+    for my $h ( @{$remHash[0]} ) {
+        $h = uc $h;
+        verbose('Attempting to remove '. $h. ' from the whitelist.');
 
-                unless($h =~ /[0-9a-f]{20}/i) {
-                        verbose('Was not a hash; skipping.');
-                        return;
-                }
-
-                if( $infohashes{$h} == 1 ) {
-                        delete $infohashes{$h};
-                        verbose('Removal successfull.');
-                } else {
-                        print "Hash not found.\n";
-                }
+        unless($h =~ /[0-9a-f]{20}/i) {
+            verbose('Was not a hash; skipping.');
+            return;
         }
-        save_whitelist();
+
+        if( $infohashes{$h} ) {
+            delete $infohashes{$h};
+            verbose('Removal successfull.');
+        } else {
+            print "Hash not found.\n";
+        }
+    }
+    save_whitelist();
 }
 
 sub add_hash {
-        load_whitelist();
-        my @addHash = @_;
+    load_whitelist();
+    my @addHash = @_;
 
-        for my $h (@{$addHash[0]}) {
-                verbose('Attempting to add '. $h. ' to the whitelist');
-                unless($h =~ /[0-9a-z]{20}/i) {
-                        print "Invalid hash: '$h'\n";
-                        return;
-                }
-
-                $infohashes{$h} = 1;
-                verbose('Addition successfull.');
+    for my $h (@{$addHash[0]}) {
+        $h = uc $h;
+        verbose('Attempting to add '. $h. ' to the whitelist');
+        unless($h =~ /[0-9a-z]{20}/i) {
+            print "Invalid hash: '$h'\n";
+            return;
         }
-        save_whitelist();
+
+        $infohashes{$h} = 1;
+        verbose('Addition successfull.');
+    }
+    save_whitelist();
 }
 
 sub hup_server {
-        ## Sending a SIGHUP to both processes tells them to reload the whitelist file.
-        #verbose('Sending a SIGHUP to all \'opentracker\' processes.');
-        #system('pkill', '-1', 'opentracker');
-	verbose('ignoring hup');
+    ## NOTE: I've removed this from my fork of opentracker.  I've moved to
+    ## using inotify instead of sending SIGHUP signals as it would crash my
+    ## server.  Uncomment the system call here to restore this
+    ## functionality.
+
+    ## Sending a SIGHUP to both processes tells them to reload the whitelist file.
+    #verbose('Sending a SIGHUP to all \'opentracker\' processes.');
+    #system('pkill', '-1', 'opentracker');
+    verbose('ignoring hup');
 }
 
 sub list_hashes {
-        load_whitelist();
-        my @hashes = keys %infohashes;
-        foreach my $h ( @hashes ) {
-                print "$h\n";
-        }
+    load_whitelist();
+    my @hashes = keys %infohashes;
+    foreach my $h ( @hashes ) {
+        print "$h\n";
+    }
 
-        print "\n". ($#hashes + 1). " hashes found.\n";
+    print "\n". ($#hashes + 1). " hashes found.\n";
 }
 
 Getopt::Long::Configure("bundling");
 GetOptions(\%opts, 'verbose|v', 'add|a=s@', 'remove|r=s@', 'list|l', 'huponly|h', 'whitelist|w=s');
 
 if(defined($opts{'huponly'})) {
-        hup_server();
-        exit(0);
+    print("Server uses inotify.  Sending SIGHUP is disabled.\n");
+    exit(1);
 }
 
 my $didsomething = 0;
 
-if($opts{'whitelist'} ne '/home/nick/tracker/bin/whitelist.txt') {
-        verbose('Using non-default whitelist: '. $opts{'whitelist'});
-}
+verbose('Using whitelist: '. $opts{'whitelist'});
 
 if(defined($opts{'add'})) {
-        #print Dumper($opts{'add'});
-        add_hash($opts{'add'});
-        $didsomething = 1;
+    add_hash($opts{'add'});
+    $didsomething = 1;
 }
 
 if(defined($opts{'remove'})) {
-        remove_hash($opts{'remove'});
-        $didsomething = 1;
+    remove_hash($opts{'remove'});
+    $didsomething = 1;
 }
 
 if(defined($opts{'list'})) {
-        list_hashes();
-        $didsomething = 1;
+    list_hashes();
+    $didsomething = 1;
 }
 
-#load_whitelist();
-
-my @hashes = keys(%infohashes);
-my $count = $#hashes + 1;
-
-#print $_."\n" foreach @hashes;
-#print "$count hashes found.\n";
-
 unless($didsomething == 1) {
-        pod2usage(
-                -message => "======\n== Error: No action performed!\n======\n",
-                -verbose => 1,
-                -noperldoc => 1,
-        );
+    pod2usage(
+        -message => "======\n== Error: No action performed!\n======\n",
+        -verbose => 1,
+        -noperldoc => 1,
+    );
 }
 
 
