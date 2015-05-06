@@ -1,0 +1,30 @@
+Usage:
+    manage.pl <options>
+        Manually add and remove hashes from opentracker.
+
+Options:
+    --add <hash>
+    -a <hash>
+        Add the given hash to the whitelist. This can be used multiple
+        times.
+
+    --huponly
+    -h  Don't add or remove anything, just make the server refresh the
+        whitelist. All other arguments are ignored if this is specified.
+
+    --list
+    -l  List all the hashes currently served.
+
+    --remove <hash>
+    -r <hash>
+        Remove the given hash from the whiletlist. This can be used multiple
+        times.
+
+    --verbose
+    -v  Print everything. Chances are you don't want this.
+
+    --whitelist <file>
+    -w <file>
+        By default 'whitelist.txt' is used in the current directory. Use
+        this to change that.
+

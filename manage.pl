@@ -159,7 +159,7 @@ __END__
 
 =head1 NAME
 
-manual-add-remove.pl
+manage.pl
 
 =head1 SYNOPSIS
 
