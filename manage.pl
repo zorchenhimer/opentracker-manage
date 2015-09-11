@@ -98,6 +98,10 @@ sub add_hash {
 }
 
 sub hup_server {
+    if(defined($opts['nohup'])) {
+        verbose('Ignoring HUP as per --nohup.');
+        return;
+    }
     ## NOTE: I've removed this from my fork of opentracker.  I've moved to
     ## using inotify instead of sending SIGHUP signals as it would crash my
     ## server.  Uncomment the system call here to restore this
@@ -119,7 +123,7 @@ sub list_hashes {
 }
 
 Getopt::Long::Configure("bundling");
-GetOptions(\%opts, 'verbose|v', 'add|a=s@', 'remove|r=s@', 'list|l', 'huponly|h', 'whitelist|w=s');
+GetOptions(\%opts, 'verbose|v', 'add|a=s@', 'remove|r=s@', 'list|l', 'huponly|h', 'whitelist|w=s', 'nohup|n');
 
 if(defined($opts{'huponly'})) {
     print("Server uses inotify.  Sending SIGHUP is disabled.\n");

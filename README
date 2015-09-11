@@ -1,6 +1,6 @@
 Usage:
     manage.pl <options>
-        Manually add and remove hashes from opentracker.
+        Add and remove hashes from opentracker's accesslists.
 
 Options:
     --add <hash>
@@ -14,6 +14,10 @@ Options:
 
     --list
     -l  List all the hashes currently served.
+
+    --nohup
+    -n  Do not send a HUP signal to the server telling it to reload the
+        whitelist.  Used with --add or --remove; ignored otherwise.
 
     --remove <hash>
     -r <hash>
