@@ -8,7 +8,7 @@ use Pod::Usage;
 
 my $VERSION = '0.2';
 my %infohashes;;
-my %opts = ('whitelist' => '/var/www/tracker/whitelist.txt');
+my %opts = ('whitelist' => 'whitelist.txt');
 
 sub verbose {
     return unless($opts{'verbose'});
@@ -104,9 +104,8 @@ sub hup_server {
     ## functionality.
 
     ## Sending a SIGHUP to both processes tells them to reload the whitelist file.
-    #verbose('Sending a SIGHUP to all \'opentracker\' processes.');
-    #system('pkill', '-1', 'opentracker');
-    verbose('ignoring hup');
+    verbose('Sending a SIGHUP to all \'opentracker\' processes.');
+    system('pkill', '-1', 'opentracker');
 }
 
 sub list_hashes {
