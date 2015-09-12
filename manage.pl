@@ -98,7 +98,7 @@ sub add_hash {
 }
 
 sub hup_server {
-    if(defined($opts['nohup'])) {
+    if(defined($opts{'nohup'})) {
         verbose('Ignoring HUP as per --nohup.');
         return;
     }
